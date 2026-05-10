@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Society {
+  id               Int      @id @default(autoincrement())
+  societyName      String
+  societyEmail     String   @unique
+  password         String
+  secretaryName    String
+  secretaryNumber  String
+  societyLogo      String
+  createdAt        DateTime @default(now())
+
+  events Event[]
+}
+
+model Event {
+  id               Int      @id @default(autoincrement())
+  eventName        String
+  eventDescription String
+  eventDate        DateTime
+  venue            String
+  numberOfJudges   Int
+  status           String
+  createdAt        DateTime @default(now())
+
+  societyId        Int
+  society          Society  @relation(fields: [societyId], references: [id])
+
+  judges  Judge[]
+  criteria ScoringCriterion[]
+  entries Entry[]
+}
+
+model Judge {
+  id         Int      @id @default(autoincrement())
+  judgeName  String
+  judgePin String @unique
+  createdAt  DateTime @default(now())
+
+  eventId    Int
+  event      Event    @relation(fields: [eventId], references: [id])
+
+  scores Score[]
+}
+
+model ScoringCriterion {
+  id         Int      @id @default(autoincrement())
+  name       String
+  maxMarks   Int
+  createdAt  DateTime @default(now())
+
+  eventId    Int
+  event      Event    @relation(fields: [eventId], references: [id])
+}
+
+model Entry {
+  id         Int      @id @default(autoincrement())
+  entryName  String
+  createdAt  DateTime @default(now())
+
+  eventId    Int
+  event      Event    @relation(fields: [eventId], references: [id])
+
+  scores Score[]
+}
+
+model Score {
+  id         Int      @id @default(autoincrement())
+  marks      Json
+  totalMarks Int
+  createdAt  DateTime @default(now())
+
+  judgeId    Int
+  judge      Judge    @relation(fields: [judgeId], references: [id])
+
+  entryId    Int
+  entry      Entry    @relation(fields: [entryId], references: [id])
+}
