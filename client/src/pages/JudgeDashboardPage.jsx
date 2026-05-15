@@ -22,7 +22,7 @@ function JudgeDashboardPage() {
   const fetchJudgeDashboard = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/judge-dashboard/${judge.id}`
+        `https://bias-backend-h3so.onrender.com/api/societies/judge-dashboard/${judge.id}`
       );
 
       setDashboardData(response.data);
@@ -55,7 +55,7 @@ function JudgeDashboardPage() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/societies/submit-score",
+        "https://bias-backend-h3so.onrender.com/api/societies/submit-score",
         {
           judgeId: judge.id,
           entryId: selectedEntry,

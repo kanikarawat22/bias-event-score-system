@@ -19,7 +19,7 @@ function JudgeManagementPage() {
   const fetchEvents = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/events/${society.id}`
+        `https://bias-backend-h3so.onrender.com/api/societies/events/${society.id}`
       );
 
       setEvents(response.data);
@@ -32,7 +32,7 @@ function JudgeManagementPage() {
   const fetchJudges = async (eventId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/judges/${eventId}`
+        `https://bias-backend-h3so.onrender.com/api/societies/judges/${eventId}`
       );
 
       setJudges(response.data);
@@ -45,7 +45,7 @@ function JudgeManagementPage() {
   const handleDeleteJudge = async (judgeId) => {
   try {
     await axios.delete(
-      `http://localhost:5000/api/societies/delete-judge/${judgeId}`
+      `https://bias-backend-h3so.onrender.com/api/societies/delete-judge/${judgeId}`
     );
 
     alert("Judge deleted successfully");
@@ -89,7 +89,7 @@ function JudgeManagementPage() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/societies/add-judge",
+        "https://bias-backend-h3so.onrender.com/api/societies/add-judge",
         {
           ...judgeData,
           eventId: selectedEvent,

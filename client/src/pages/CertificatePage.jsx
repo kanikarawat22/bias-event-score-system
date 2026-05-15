@@ -30,7 +30,7 @@ function CertificatePage() {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/societies/generate-certificate",
+        "https://bias-backend-h3so.onrender.com/api/societies/generate-certificate",
         formData,
         {
           responseType: "blob",

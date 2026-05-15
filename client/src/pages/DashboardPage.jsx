@@ -69,7 +69,7 @@ function DashboardPage() {
   const fetchEvents = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/events/${society.id}`
+        `https://bias-backend-h3so.onrender.com/api/societies/events/${society.id}`
       );
 
       setEvents(response.data);
@@ -82,7 +82,7 @@ function DashboardPage() {
   const handleDeleteEvent = async (eventId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/societies/delete-event/${eventId}`
+        `https://bias-backend-h3so.onrender.com/api/societies/delete-event/${eventId}`
       );
 
       alert("Event deleted successfully");
@@ -101,7 +101,7 @@ function DashboardPage() {
       <div className="flex justify-between items-center mb-10">
         <div className="flex items-center gap-5">
           <img
-            src={`http://localhost:5000/${society.societyLogo.replace(/\\/g, "/")}`}
+            src={`https://bias-backend-h3so.onrender.com/${society.societyLogo.replace(/\\/g, "/")}`}
             alt="Society Logo"
             className="w-20 h-20 rounded-full object-cover border-4 border-cyan-300 shadow-xl"
           />
