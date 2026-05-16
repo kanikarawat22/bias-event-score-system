@@ -101,10 +101,12 @@ function DashboardPage() {
       <div className="flex justify-between items-center mb-10">
         <div className="flex items-center gap-5">
           <img
-            src={`https://bias-backend-h3so.onrender.com/${society.societyLogo.replace(/\\/g, "/")}`}
-            alt="Society Logo"
-            className="w-20 h-20 rounded-full object-cover border-4 border-cyan-300 shadow-xl"
-          />
+  src={society.societyLogo.startsWith("http")
+    ? society.societyLogo
+    : `https://bias-backend-h3so.onrender.com/${society.societyLogo}`}
+  alt="Society Logo"
+  className="w-20 h-20 rounded-full object-cover border-4 border-cyan-300 shadow-xl"
+/>
 
           <h1 className="text-white text-4xl font-bold">
             Welcome, {society?.societyName}
