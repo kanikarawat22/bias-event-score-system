@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const fs = require("fs");
+const axios = require("axios");
 
 const registerSociety = async (req, res) => {
   try {
@@ -685,40 +686,30 @@ const generateCertificate = async (req, res) => {
 
     doc.pipe(res);
 
-    // background
-    doc
-      .rect(0, 0, 842, 595)
-      .fill("#ffffff");
+    doc.rect(0, 0, 842, 595).fill("#ffffff");
 
-    // border
     doc
       .lineWidth(3)
       .strokeColor("#d4af37")
       .rect(25, 25, 792, 545)
       .stroke();
 
-    // logos
-    const fixedSocietyLogo = societyLogo.replace(/\\/g, "/");
+    // Society Logo (Cloudinary URL)
+    if (societyLogo) {
+      const societyResponse = await axios.get(societyLogo, {
+        responseType: "arraybuffer",
+      });
 
-    doc.image(
-      path.join(__dirname, "../", fixedSocietyLogo),
-      70,
-      50,
-      {
+      doc.image(societyResponse.data, 70, 50, {
         width: 90,
-      }
-    );
+      });
+    }
 
-    doc.image(
-      collegeLogoPath,
-      680,
-      50,
-      {
-        width: 90,
-      }
-    );
+    // College Logo (local asset)
+    doc.image(collegeLogoPath, 680, 50, {
+      width: 90,
+    });
 
-    // headings
     doc
       .fillColor("#111827")
       .font("Helvetica-Bold")
@@ -744,7 +735,6 @@ const generateCertificate = async (req, res) => {
         width: 842,
       });
 
-    // participant name
     doc
       .font("Helvetica-Bold")
       .fontSize(32)
@@ -754,7 +744,6 @@ const generateCertificate = async (req, res) => {
         width: 842,
       });
 
-    // achievement line
     doc
       .font("Helvetica")
       .fontSize(18)
@@ -764,7 +753,6 @@ const generateCertificate = async (req, res) => {
         width: 842,
       });
 
-    // event
     doc
       .font("Helvetica-Bold")
       .fontSize(22)
@@ -774,7 +762,6 @@ const generateCertificate = async (req, res) => {
         width: 842,
       });
 
-    // description centered
     doc
       .font("Helvetica")
       .fontSize(14)
@@ -790,41 +777,37 @@ const generateCertificate = async (req, res) => {
         }
       );
 
-    // signatures
-    if (facultyHead) {
-      doc.image(
-        path.join(__dirname, "../", facultyHead.path),
-        140,
-        480,
-        {
-          width: 100,
-        }
-      );
+    // Signatures from Cloudinary
+    if (facultyHead?.path) {
+      const facultyResponse = await axios.get(facultyHead.path, {
+        responseType: "arraybuffer",
+      });
+
+      doc.image(facultyResponse.data, 140, 480, {
+        width: 100,
+      });
     }
 
-    if (director) {
-      doc.image(
-        path.join(__dirname, "../", director.path),
-        370,
-        480,
-        {
-          width: 100,
-        }
-      );
+    if (director?.path) {
+      const directorResponse = await axios.get(director.path, {
+        responseType: "arraybuffer",
+      });
+
+      doc.image(directorResponse.data, 370, 480, {
+        width: 100,
+      });
     }
 
-    if (convener) {
-      doc.image(
-        path.join(__dirname, "../", convener.path),
-        600,
-        480,
-        {
-          width: 100,
-        }
-      );
+    if (convener?.path) {
+      const convenerResponse = await axios.get(convener.path, {
+        responseType: "arraybuffer",
+      });
+
+      doc.image(convenerResponse.data, 600, 480, {
+        width: 100,
+      });
     }
 
-    // signature labels
     doc
       .font("Helvetica")
       .fontSize(12)
