@@ -41,7 +41,7 @@ const registerSociety = async (req, res) => {
         password: hashedPassword,
         secretaryName: secretaryName || "",
         secretaryNumber: secretaryNumber || "",
-        societyLogo: req.file?.path ?? "",
+        societyLogo:  "",
       },
     });
 
