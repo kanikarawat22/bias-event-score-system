@@ -22,7 +22,7 @@ function EditEventPage() {
   const fetchEventDetails = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/event/${eventId}`
+        `https://bias-event-score-system.onrender.com/api/societies/event/${eventId}`
       );
 
       const event = response.data;
@@ -54,7 +54,7 @@ function EditEventPage() {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/societies/update-event/${eventId}`,
+        `https://bias-event-score-system.onrender.com/api/societies/update-event/${eventId}`,
         eventData
       );
 

@@ -54,13 +54,13 @@ const handleSubmit = async (event) => {
 
 
     const response = await axios.post(
-  "http://localhost:5000/api/societies/register",
+  "https://bias-event-score-system.onrender.com/api/societies/register",
   data
 );
 
 /*
     const response = await axios.post(
-      "http://localhost:5000/api/societies/register",
+      "https://bias-event-score-system.onrender.com/api/societies/register",
       data
     );*/
 

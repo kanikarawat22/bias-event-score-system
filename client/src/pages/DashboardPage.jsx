@@ -69,7 +69,7 @@ function DashboardPage() {
   const fetchEvents = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/events/${society.id}`
+        `https://bias-event-score-system.onrender.com/api/societies/events/${society.id}`
       );
 
       setEvents(response.data);
@@ -82,7 +82,7 @@ function DashboardPage() {
   const handleDeleteEvent = async (eventId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/societies/delete-event/${eventId}`
+        `https://bias-event-score-system.onrender.com/api/societies/delete-event/${eventId}`
       );
 
       alert("Event deleted successfully");
@@ -103,7 +103,7 @@ function DashboardPage() {
           <img
   src={society.societyLogo.startsWith("http")
     ? society.societyLogo
-    : `https://http://localhost:5000/${society.societyLogo}`}
+    : `https://https://bias-event-score-system.onrender.com/${society.societyLogo}`}
   alt="Society Logo"
   className="w-20 h-20 rounded-full object-cover border-4 border-cyan-300 shadow-xl"
 />

@@ -12,7 +12,7 @@ function LeaderboardPage() {
   const fetchLeaderboard = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/societies/leaderboard/${society.id}`
+        `https://bias-event-score-system.onrender.com/api/societies/leaderboard/${society.id}`
       );
 
       setLeaderboards(response.data);
