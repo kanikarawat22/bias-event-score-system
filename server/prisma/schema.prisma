@@ -14,7 +14,7 @@ model Society {
   password         String
   secretaryName    String
   secretaryNumber  String
-  societyLogo      String
+  societyLogo      String?
   createdAt        DateTime @default(now())
 
   events Event[]
