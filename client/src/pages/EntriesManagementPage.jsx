@@ -18,7 +18,7 @@ function EntriesManagementPage() {
   const fetchEvents = async () => {
     try {
       const response = await axios.get(
-        `https://bias-backend-h3so.onrender.com/api/societies/events/${society.id}`
+        `http://localhost:5000/api/societies/events/${society.id}`
       );
 
       setEvents(response.data);
@@ -31,7 +31,7 @@ function EntriesManagementPage() {
   const fetchEntries = async (eventId) => {
     try {
       const response = await axios.get(
-        `https://bias-backend-h3so.onrender.com/api/societies/entries/${eventId}`
+        `http://localhost:5000/api/societies/entries/${eventId}`
       );
 
       setEntries(response.data);
@@ -61,7 +61,7 @@ function EntriesManagementPage() {
 
     try {
       await axios.post(
-        "https://bias-backend-h3so.onrender.com/api/societies/add-entry",
+        "http://localhost:5000/api/societies/add-entry",
         {
           entryName,
           eventId: selectedEvent,

@@ -29,8 +29,7 @@ const handleSubmit = async (event) => {
     !formData.password ||
     !formData.confirmPassword ||
     !formData.secretaryName ||
-    !formData.secretaryNumber ||
-    !formData.societyLogo
+    !formData.secretaryNumber
   ) {
     alert("Please fill all fields");
     return;
@@ -49,12 +48,21 @@ const handleSubmit = async (event) => {
     data.append("password", formData.password);
     data.append("secretaryName", formData.secretaryName);
     data.append("secretaryNumber", formData.secretaryNumber);
-    data.append("societyLogo", formData.societyLogo);
+    if (formData.societyLogo) {
+  data.append("societyLogo", formData.societyLogo);
+}
+
 
     const response = await axios.post(
-      "https://bias-backend-h3so.onrender.com/api/societies/register",
+  "http://localhost:5000/api/societies/register",
+  data
+);
+
+/*
+    const response = await axios.post(
+      "http://localhost:5000/api/societies/register",
       data
-    );
+    );*/
 
     alert(response.data.message);
 

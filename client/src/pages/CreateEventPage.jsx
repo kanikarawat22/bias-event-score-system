@@ -54,7 +54,7 @@ function CreateEventPage() {
 
     try {
       const response = await axios.post(
-        "https://bias-backend-h3so.onrender.com/api/societies/create-event",
+        "http://localhost:5000/api/societies/create-event",
         {
           ...eventData,
           societyId: society.id,

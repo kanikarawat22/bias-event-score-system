@@ -1,3 +1,4 @@
+
 const prisma = require("./prismaClient");
 const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
@@ -5,8 +6,12 @@ const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
 
+// ---------------- REGISTER SOCIETY ----------------
 const registerSociety = async (req, res) => {
   try {
+    console.log("BODY:", req.body);
+    console.log("FILE:", req.file);
+
     const {
       societyName,
       societyEmail,
@@ -15,16 +20,16 @@ const registerSociety = async (req, res) => {
       secretaryNumber,
     } = req.body;
 
+    if (!societyName || !societyEmail || !password) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
     const existingSociety = await prisma.society.findUnique({
-      where: {
-        societyEmail,
-      },
+      where: { societyEmail },
     });
 
     if (existingSociety) {
-      return res.status(400).json({
-        message: "Society already registered",
-      });
+      return res.status(400).json({ message: "Society already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,47 +39,39 @@ const registerSociety = async (req, res) => {
         societyName,
         societyEmail,
         password: hashedPassword,
-        secretaryName,
-        secretaryNumber,
-        societyLogo: req.file ? req.file.path : "",
+        secretaryName: secretaryName || "",
+        secretaryNumber: secretaryNumber || "",
+        societyLogo: req.file?.path ?? "",
       },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Society registered successfully",
       society: newSociety,
     });
 
   } catch (error) {
-    console.log(error);
+    console.log("REGISTER ERROR:", error);
 
-    res.status(500).json({
-      message: "Server error",
+    return res.status(500).json({
+      message: error.message,
     });
   }
 };
+
+// ---------------- LOGIN SOCIETY ----------------
 const loginSociety = async (req, res) => {
   try {
     const { societyEmail, password } = req.body;
 
     const society = await prisma.society.findUnique({
-      where: {
-        societyEmail,
-      },
+      where: { societyEmail },
     });
 
     if (!society) {
-      res.status(200).json({
-  message: "Login successful",
-  society: {
-    id: society.id,
-    societyName: society.societyName,
-    societyEmail: society.societyEmail,
-    secretaryName: society.secretaryName,
-    secretaryNumber: society.secretaryNumber,
-    societyLogo: society.societyLogo,
-  },
-});
+      return res.status(404).json({
+        message: "Society not found",
+      });
     }
 
     const isPasswordCorrect = await bcrypt.compare(
@@ -88,22 +85,29 @@ const loginSociety = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Login successful",
-      society,
+      society: {
+        id: society.id,
+        societyName: society.societyName,
+        societyEmail: society.societyEmail,
+        secretaryName: society.secretaryName,
+        secretaryNumber: society.secretaryNumber,
+        societyLogo: society.societyLogo,
+      },
     });
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- CREATE EVENT ----------------
 const createEvent = async (req, res) => {
   try {
     console.log(req.body);
+
     const {
       eventName,
       eventDescription,
@@ -115,6 +119,10 @@ const createEvent = async (req, res) => {
       criteria,
     } = req.body;
 
+    const parsedCriteria = Array.isArray(criteria)
+      ? criteria
+      : [];
+
     const newEvent = await prisma.event.create({
       data: {
         eventName,
@@ -125,12 +133,14 @@ const createEvent = async (req, res) => {
         status,
         societyId: parseInt(societyId),
 
-        criteria: {
-          create: criteria.map((criterion) => ({
-            name: criterion.name,
-            maxMarks: parseInt(criterion.maxMarks),
-          })),
-        },
+        criteria: parsedCriteria.length
+          ? {
+              create: parsedCriteria.map((c) => ({
+                name: c.name,
+                maxMarks: parseInt(c.maxMarks),
+              })),
+            }
+          : undefined,
       },
 
       include: {
@@ -145,77 +155,59 @@ const createEvent = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- GET SOCIETY EVENTS ----------------
 const getSocietyEvents = async (req, res) => {
   try {
     const { societyId } = req.params;
 
     const events = await prisma.event.findMany({
-      where: {
-        societyId: parseInt(societyId),
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { societyId: parseInt(societyId) },
+      orderBy: { createdAt: "desc" },
     });
 
     res.status(200).json(events);
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- DELETE EVENT ----------------
 const deleteEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
 
     const entries = await prisma.entry.findMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
+      where: { eventId: parseInt(eventId) },
     });
 
-    const entryIds = entries.map((entry) => entry.id);
+    const entryIds = entries.map((e) => e.id);
 
     await prisma.score.deleteMany({
       where: {
-        entryId: {
-          in: entryIds,
-        },
+        entryId: { in: entryIds },
       },
     });
 
     await prisma.judge.deleteMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
+      where: { eventId: parseInt(eventId) },
     });
 
     await prisma.entry.deleteMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
+      where: { eventId: parseInt(eventId) },
     });
 
     await prisma.scoringCriterion.deleteMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
+      where: { eventId: parseInt(eventId) },
     });
 
     await prisma.event.delete({
-      where: {
-        id: parseInt(eventId),
-      },
+      where: { id: parseInt(eventId) },
     });
 
     res.status(200).json({
@@ -224,20 +216,17 @@ const deleteEvent = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- GET SINGLE EVENT ----------------
 const getSingleEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
 
     const event = await prisma.event.findUnique({
-      where: {
-        id: parseInt(eventId),
-      },
+      where: { id: parseInt(eventId) },
     });
 
     if (!event) {
@@ -250,12 +239,12 @@ const getSingleEvent = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+
+// ---------------- UPDATE EVENT ----------------
 const updateEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -270,15 +259,15 @@ const updateEvent = async (req, res) => {
     } = req.body;
 
     const updatedEvent = await prisma.event.update({
-      where: {
-        id: parseInt(eventId),
-      },
+      where: { id: parseInt(eventId) },
       data: {
         eventName,
         eventDescription,
-        eventDate: new Date(eventDate),
+        eventDate: eventDate ? new Date(eventDate) : undefined,
         venue,
-        numberOfJudges: parseInt(numberOfJudges),
+        numberOfJudges: numberOfJudges
+          ? parseInt(numberOfJudges)
+          : undefined,
         status,
       },
     });
@@ -290,23 +279,18 @@ const updateEvent = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- ADD JUDGE ----------------
 const addJudge = async (req, res) => {
   try {
     const { judgeName, judgePin, eventId } = req.body;
 
     const event = await prisma.event.findUnique({
-      where: {
-        id: parseInt(eventId),
-      },
-      include: {
-        judges: true,
-      },
+      where: { id: parseInt(eventId) },
+      include: { judges: true },
     });
 
     if (!event) {
@@ -343,45 +327,36 @@ const addJudge = async (req, res) => {
       });
     }
 
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- GET EVENT JUDGES ----------------
 const getEventJudges = async (req, res) => {
   try {
     const { eventId } = req.params;
 
     const judges = await prisma.judge.findMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { eventId: parseInt(eventId) },
+      orderBy: { createdAt: "desc" },
     });
 
     res.status(200).json(judges);
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- JUDGE LOGIN ----------------
 const judgeLogin = async (req, res) => {
   try {
     const { judgePin } = req.body;
 
     const judge = await prisma.judge.findFirst({
-      where: {
-        judgePin,
-      },
-      include: {
-        event: true,
-      },
+      where: { judgePin },
+      include: { event: true },
     });
 
     if (!judge) {
@@ -397,12 +372,11 @@ const judgeLogin = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- ADD ENTRY ----------------
 const addEntry = async (req, res) => {
   try {
     const { entryName, eventId } = req.body;
@@ -421,44 +395,37 @@ const addEntry = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
+
+
+// ---------------- GET EVENT ENTRIES ----------------
 const getEventEntries = async (req, res) => {
   try {
     const { eventId } = req.params;
 
     const entries = await prisma.entry.findMany({
-      where: {
-        eventId: parseInt(eventId),
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { eventId: parseInt(eventId) },
+      orderBy: { createdAt: "desc" },
     });
 
     res.status(200).json(entries);
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- JUDGE DASHBOARD ----------------
 const getJudgeDashboardData = async (req, res) => {
   try {
     const { judgeId } = req.params;
 
     const judge = await prisma.judge.findUnique({
-      where: {
-        id: parseInt(judgeId),
-      },
+      where: { id: parseInt(judgeId) },
       include: {
         event: {
           include: {
@@ -479,26 +446,23 @@ const getJudgeDashboardData = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
+// ---------------- SUBMIT SCORE ----------------
 const submitScore = async (req, res) => {
   try {
-    const {
-      judgeId,
-      entryId,
-      marks,
-      totalMarks,
-    } = req.body;
+    const { judgeId, entryId, marks, totalMarks } = req.body;
+
+    const parsedJudgeId = parseInt(judgeId);
+    const parsedEntryId = parseInt(entryId);
+    const parsedTotalMarks = parseInt(totalMarks);
 
     const existingScore = await prisma.score.findFirst({
       where: {
-        judgeId: parseInt(judgeId),
-        entryId: parseInt(entryId),
+        judgeId: parsedJudgeId,
+        entryId: parsedEntryId,
       },
     });
 
@@ -510,18 +474,16 @@ const submitScore = async (req, res) => {
 
     const newScore = await prisma.score.create({
       data: {
-        judgeId: parseInt(judgeId),
-        entryId: parseInt(entryId),
+        judgeId: parsedJudgeId,
+        entryId: parsedEntryId,
         marks,
-        totalMarks: parseInt(totalMarks),
+        totalMarks: parsedTotalMarks,
       },
     });
 
     // get judge with event
     const judge = await prisma.judge.findUnique({
-      where: {
-        id: parseInt(judgeId),
-      },
+      where: { id: parsedJudgeId },
       include: {
         event: {
           include: {
@@ -532,31 +494,31 @@ const submitScore = async (req, res) => {
       },
     });
 
+    if (!judge || !judge.event) {
+      return res.status(404).json({
+        message: "Judge or Event not found",
+      });
+    }
+
     const totalJudges = judge.event.judges.length;
     const totalEntries = judge.event.entries.length;
 
     const expectedScoreCount = totalJudges * totalEntries;
 
-    const eventJudgeIds = judge.event.judges.map(
-  (judge) => judge.id
-);
+    const eventJudgeIds = judge.event.judges.map((j) => j.id);
 
-const currentScoreCount = await prisma.score.count({
-  where: {
-    judgeId: {
-      in: eventJudgeIds,
-    },
-  },
-});
+    const currentScoreCount = await prisma.score.count({
+      where: {
+        judgeId: {
+          in: eventJudgeIds,
+        },
+      },
+    });
 
     if (currentScoreCount === expectedScoreCount) {
       await prisma.event.update({
-        where: {
-          id: judge.event.id,
-        },
-        data: {
-          status: "Completed",
-        },
+        where: { id: judge.event.id },
+        data: { status: "Completed" },
       });
     }
 
@@ -567,25 +529,20 @@ const currentScoreCount = await prisma.score.count({
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+// ---------------- LEADERBOARD ----------------
 const getLeaderboard = async (req, res) => {
   try {
     const { societyId } = req.params;
 
     const events = await prisma.event.findMany({
-      where: {
-        societyId: parseInt(societyId),
-      },
+      where: { societyId: parseInt(societyId) },
       include: {
         entries: {
-          include: {
-            scores: true,
-          },
+          include: { scores: true },
         },
       },
     });
@@ -595,7 +552,7 @@ const getLeaderboard = async (req, res) => {
         const rankings = event.entries
           .map((entry) => {
             const total = entry.scores.reduce(
-              (sum, score) => sum + score.totalMarks,
+              (sum, score) => sum + (score.totalMarks || 0),
               0
             );
 
@@ -604,7 +561,7 @@ const getLeaderboard = async (req, res) => {
               total,
             };
           })
-          .filter((entry) => entry.total > 0)
+          .filter((e) => e.total > 0)
           .sort((a, b) => b.total - a.total);
 
         return {
@@ -618,12 +575,10 @@ const getLeaderboard = async (req, res) => {
 
   } catch (error) {
     console.log(error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const deleteJudge = async (req, res) => {
   try {
@@ -653,6 +608,8 @@ const deleteJudge = async (req, res) => {
     });
   }
 };
+
+
 const generateCertificate = async (req, res) => {
   try {
     const {
@@ -663,9 +620,9 @@ const generateCertificate = async (req, res) => {
       societyLogo,
     } = req.body;
 
-    const facultyHead = req.files.facultyHeadSignature?.[0];
-    const director = req.files.directorSignature?.[0];
-    const convener = req.files.convenerSignature?.[0];
+    const facultyHead = req.files?.facultyHeadSignature?.[0];
+    const director = req.files?.directorSignature?.[0];
+    const convener = req.files?.convenerSignature?.[0];
 
     const collegeLogoPath = path.join(
       __dirname,
@@ -694,18 +651,22 @@ const generateCertificate = async (req, res) => {
       .rect(25, 25, 792, 545)
       .stroke();
 
-    // Society Logo (Cloudinary URL)
+    // Society Logo
     if (societyLogo) {
-      const societyResponse = await axios.get(societyLogo, {
-        responseType: "arraybuffer",
-      });
+      try {
+        const societyResponse = await axios.get(societyLogo, {
+          responseType: "arraybuffer",
+        });
 
-      doc.image(societyResponse.data, 70, 50, {
-        width: 90,
-      });
+        doc.image(societyResponse.data, 70, 50, {
+          width: 90,
+        });
+      } catch (err) {
+        console.log("Society logo load failed");
+      }
     }
 
-    // College Logo (local asset)
+    // College Logo
     doc.image(collegeLogoPath, 680, 50, {
       width: 90,
     });
@@ -777,35 +738,41 @@ const generateCertificate = async (req, res) => {
         }
       );
 
-    // Signatures from Cloudinary
+    // Signatures
     if (facultyHead?.path) {
-      const facultyResponse = await axios.get(facultyHead.path, {
-        responseType: "arraybuffer",
-      });
+      try {
+        const facultyResponse = await axios.get(facultyHead.path, {
+          responseType: "arraybuffer",
+        });
 
-      doc.image(facultyResponse.data, 140, 480, {
-        width: 100,
-      });
+        doc.image(facultyResponse.data, 140, 480, {
+          width: 100,
+        });
+      } catch (err) {}
     }
 
     if (director?.path) {
-      const directorResponse = await axios.get(director.path, {
-        responseType: "arraybuffer",
-      });
+      try {
+        const directorResponse = await axios.get(director.path, {
+          responseType: "arraybuffer",
+        });
 
-      doc.image(directorResponse.data, 370, 480, {
-        width: 100,
-      });
+        doc.image(directorResponse.data, 370, 480, {
+          width: 100,
+        });
+      } catch (err) {}
     }
 
     if (convener?.path) {
-      const convenerResponse = await axios.get(convener.path, {
-        responseType: "arraybuffer",
-      });
+      try {
+        const convenerResponse = await axios.get(convener.path, {
+          responseType: "arraybuffer",
+        });
 
-      doc.image(convenerResponse.data, 600, 480, {
-        width: 100,
-      });
+        doc.image(convenerResponse.data, 600, 480, {
+          width: 100,
+        });
+      } catch (err) {}
     }
 
     doc
@@ -815,7 +782,6 @@ const generateCertificate = async (req, res) => {
       .text("Faculty Head", 135, 550);
 
     doc.text("Director", 395, 550);
-
     doc.text("Faculty Convener", 580, 550);
 
     doc.end();
@@ -828,6 +794,8 @@ const generateCertificate = async (req, res) => {
     });
   }
 };
+
+
 module.exports = {
   getLeaderboard,
   getJudgeDashboardData,
@@ -847,3 +815,10 @@ module.exports = {
   deleteJudge,
   generateCertificate,
 };
+
+
+
+
+
+
+

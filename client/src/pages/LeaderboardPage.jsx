@@ -12,7 +12,7 @@ function LeaderboardPage() {
   const fetchLeaderboard = async () => {
     try {
       const response = await axios.get(
-        `https://bias-backend-h3so.onrender.com/api/societies/leaderboard/${society.id}`
+        `http://localhost:5000/api/societies/leaderboard/${society.id}`
       );
 
       setLeaderboards(response.data);

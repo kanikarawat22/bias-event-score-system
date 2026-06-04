@@ -16,7 +16,7 @@ function JudgeLoginPage() {
 
     try {
       const response = await axios.post(
-        "https://bias-backend-h3so.onrender.com/api/societies/judge-login",
+        "http://localhost:5000/api/societies/judge-login",
         {
           judgePin,
         }
